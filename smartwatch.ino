@@ -2,21 +2,21 @@ void serialEvent() {
 }
 #include <LCD5110_Basic.h>
 int isik = 0;
-int menu = 0;
-int sol = 4;
-int sag = 2;
-int orta = 3;
-int ortab, sagb, solb;
+int currentMenuIndex = 0;
+int leftButtonPin = 4;
+int rightButtonPin = 2;
+int middleButtonPin = 3;
+int middlePressed, rightPressed, leftPressed;
 LCD5110 myGLCD(8, 9, 10, 11, 12);
-String menuler[] = {"-SmartWatch-", "Saat Modu", "Arka Isik", "Notlar", "Led", "Uyku Modu", "Metronome", "Kronometre", "B Acik", "", "", ""};
+String menuItems[] = {"-Hello Kaan-", "Saat Modu", "Arka Isik", "Notlar", "Led", "Uyku Modu", "Metronome", "Kronometre", "B Acik", "", "", ""};
 extern uint8_t SmallFont[];
-bool bildirimonay = true;
-String msgnot = "";
+bool getNotification = true;
+String note = "";
 void setup()
 {
-  pinMode(sag, INPUT);
-  pinMode(sol, INPUT);
-  pinMode(orta, INPUT);
+  pinMode(rightButtonPin, INPUT);
+  pinMode(leftButtonPin, INPUT);
+  pinMode(middleButtonPin, INPUT);
   pinMode(5, OUTPUT);
   pinMode(A3, OUTPUT);
   Serial.begin(9600);
@@ -25,256 +25,262 @@ void setup()
   digitalWrite(5, HIGH);
   pinMode(A0, OUTPUT);
   digitalWrite(A0, HIGH);
-  baslatiliyor();
+  Initalize();
 }
 
 void loop()
 {
   Serial.begin(9600);
   myGLCD.disableSleep();
-  sagb = digitalRead(sag);
-  solb = digitalRead(sol);
-  ortab = digitalRead(orta);
-  if (sagb == 1)
-  {
-    if (menu < 8)
+  rightPressed = digitalRead(rightButtonPin);
+  leftPressed = digitalRead(leftButtonPin);
+  middlePressed = digitalRead(middleButtonPin);
+  if (rightPressed == 1 || leftPressed == 1 || middlePressed == 1 ) {
+    if (rightPressed == 1)
     {
-      menu = menu + 1;
+      if (currentMenuIndex < 8)
+      {
+        currentMenuIndex = currentMenuIndex + 1;
+      }
     }
-  }
-  if (solb == 1)
-  {
-    if (menu > 0)
-      menu = menu - 1;
-  }
-  int goster = 1;
-  myGLCD.clrScr();
-  for (int i = menu; i < menu + 4; i++)
-  {
-    if (menu == i)
+    if (leftPressed == 1)
     {
-      myGLCD.print(">" + menuler[i], LEFT, 8 * goster);
+      if (currentMenuIndex > 0)
+        currentMenuIndex = currentMenuIndex - 1;
     }
-    else
+    int showMenuItemsPixel = 1;
+    myGLCD.clrScr();
+    for (int i = currentMenuIndex; i < currentMenuIndex + 4; i++)
     {
-      myGLCD.print(menuler[i], LEFT, (8 * goster));
-    }
-    goster++;
-  }
-
-  if (ortab == 1)
-  {
-    switch (menu)
-    {
-      case 0:
-        break;
-      case 1:
-        saat();
-        break;
-      case 2:
-        isikcontrol(5, "Arka");
-        break;
-      case 3:
-        notlar();
-        break;
-      case 4:
-        isikcontrol(A3, "Kirmizi");
-        break;
-      case 5:
-        uyku();
-        break;
-      case 6:
-        metronom();
-        break;
-      case 7:
-        kronometre();
-        break;
-      case 8:
-        switch (bildirimonay)
-        {
-          case true:
-            menuler[8] = "B Kapali";
-            bildirimonay = false;
-            delay(150);
-            break;
-          case false:
-            menuler[8] = "B Acik";
-            bildirimonay = true;
-            delay(150);
-            break;
-        }
-        break;
+      if (currentMenuIndex == i)
+      {
+        myGLCD.print(">" + menuItems[i], LEFT, 8 * showMenuItemsPixel);
+      }
+      else
+      {
+        myGLCD.print(menuItems[i], LEFT, (8 * showMenuItemsPixel));
+      }
+      showMenuItemsPixel++;
     }
 
+    if (middlePressed == 1)
+    {
+      switch (currentMenuIndex)
+      {
+        case 0:
+          break;
+        case 1:
+          Watch();
+          break;
+        case 2:
+          LedControl(5, "Arka");
+          break;
+        case 3:
+          Notes();
+          break;
+        case 4:
+          LedControl(A3, "Kirmizi");
+          break;
+        case 5:
+          Sleep();
+          break;
+        case 6:
+          Metronome();
+          break;
+        case 7:
+          Stopwatch();
+          break;
+        case 8:
+          switch (getNotification)
+          {
+            case true:
+              menuItems[8] = "B>Kapali";
+              getNotification = false;
+              delay(150);
+              break;
+            case false:
+              menuItems[8] = "B>Acik";
+              getNotification = true;
+              delay(150);
+              break;
+          }
+          break;
+      }
+
+    }
   }
-  delay(100);
+  else
+  {
+    delay(150);
+  }
+
 }
-void baslatiliyor()
+void Initalize()
 {
-  String kare = "#          ";
+  String animationText = "#          ";
   for (int i = 0; i <= 9; i++)
   {
     for (int j = 0; j <= 5; j++)
     {
       myGLCD.print("Baslatiliyor" , CENTER, 8);
       myGLCD.print("%" + String((i * 10) + (j * 2)) , CENTER , 24);
-      myGLCD.print("[" + kare + "]" , LEFT, 32);
+      myGLCD.print("[" + animationText + "]" , LEFT, 32);
       delay(25);
       myGLCD.clrScr();
     }
-    kare[i] = '#';
+    animationText[i] = '#';
 
   }
   myGLCD.print("Tamamlandı" , CENTER, 8);
   myGLCD.print("%100", CENTER , 24);
-  myGLCD.print("[" + kare + "]" , LEFT, 32);
+  myGLCD.print("[" + animationText + "]" , LEFT, 32);
   delay(75);
 }
-void saat()
+void Watch()
 {
   myGLCD.clrScr();
   delay(200);
-  ortab = 0;
-  while (ortab == 0) {
+  middlePressed = 0;
+  while (middlePressed == 0) {
     String serialA;
     serialA = Serial.readString();
     if (serialA != "")
     {
       String btmsg = serialA + " ";
-      String metin = "";
-      int satir = 1;
+      String txt = "";
+      int line = 1;
       myGLCD.clrScr();
-      int uzunluk = btmsg.length();
-      for (int i = 0; i < uzunluk; i++)
+      int getMessageln = btmsg.length();
+      for (int i = 0; i < getMessageln; i++)
       {
         if (String(btmsg[i]) != " ")
         {
-          metin = metin + String(serialA[i]);
+          txt = txt + String(serialA[i]);
         }
         else
         {
-          if (metin == "N")
+          if (txt == "N")
           {
-            msgnot = msgnot + btmsg.substring(i, uzunluk);
-            Serial.println(msgnot);
+            note = note + btmsg.substring(i, getMessageln);
+            Serial.println(note);
             myGLCD.print("Not eklendi", CENTER, 16);
             break;
           }
-          if (metin == "ND")
+          if (txt == "ND")
           {
-            msgnot = "";
+            note = "";
             myGLCD.print("Notlar silindi", CENTER, 16);
             break;
           }
-          if (metin == "B")
+          if (txt == "B")
           {
-            String bildirimn = btmsg.substring(i, uzunluk);
-            String bsatir = "";
-            int satirsayisi = 0;
-            for (int i = 0; i < bildirimn.length(); i++)
+            String notification = btmsg.substring(i, getMessageln);
+            String parseForScreen = "";
+            int lineCount = 0;
+            for (int i = 0; i < notification.length(); i++)
             {
               if (i % 12 != 0)
               {
-                bsatir = bsatir + bildirimn[i];
+                parseForScreen = parseForScreen + notification[i];
               }
               else
               {
-                bsatir = bsatir + bildirimn[i];
-                myGLCD.print(bsatir, LEFT, 8 * satirsayisi);
-                satirsayisi++;
-                bsatir = "";
+                parseForScreen = parseForScreen + notification[i];
+                myGLCD.print(parseForScreen, LEFT, 8 * lineCount);
+                lineCount++;
+                parseForScreen = "";
               }
             }
-            if (bildirimn.length() % 12 != 0)
+            if (notification.length() % 12 != 0)
             {
-              bsatir = bsatir + bildirimn[bildirimn.length()];
-              myGLCD.print(bsatir, LEFT, 8 * satirsayisi);
+              parseForScreen = parseForScreen + notification[notification.length()];
+              myGLCD.print(parseForScreen, LEFT, 8 * lineCount);
             }
-            while (ortab == 0)
+            while (middlePressed == 0)
             {
-              bildirim();
-              ortab = digitalRead(orta);
+              Alert();
+              middlePressed = digitalRead(middleButtonPin);
             }
             break;
           }
-          myGLCD.print(metin, CENTER, (8 * satir));
-          metin = "";
-          satir++;
+          myGLCD.print(txt, CENTER, (8 * line));
+          txt = "";
+          line++;
         }
 
       }
       if (btmsg.substring(0, 5) == "Arama")
       {
-        while (ortab == 0)
+        while (middlePressed == 0)
         {
-          bildirim();
-          ortab = digitalRead(orta);
+          Alert();
+          middlePressed = digitalRead(middleButtonPin);
         }
         delay(300);
       }
     }
-    ortab = digitalRead(orta);
+    middlePressed = digitalRead(middleButtonPin);
     delay(200);
-    menu = 0;
+    currentMenuIndex = 0;
   }
   myGLCD.clrScr();
 }
-void notlar()
+void Notes()
 {
   myGLCD.clrScr();
   delay(200);
-  ortab = 0;
-  int notln = msgnot.length();
-  String msatir = "";
-  int satirsayisi = 0;
-  for (int i = 0; i < notln; i++)
+  middlePressed = 0;
+  int noteLn = note.length();
+  String message = "";
+  int mLineCount = 0;
+  for (int i = 0; i < noteLn; i++)
   {
     if (i % 13 != 0)
     {
-      msatir = msatir + msgnot[i];
+      message = message + note[i];
     }
     else
     {
-      msatir = msatir + msgnot[i];
-      myGLCD.print(msatir, CENTER, 8 * satirsayisi);
-      satirsayisi++;
-      msatir = "";
+      message = message + note[i];
+      myGLCD.print(message, CENTER, 8 * mLineCount);
+      mLineCount++;
+      message = "";
     }
   }
-  if (notln % 13 != 0)
+  if (noteLn % 13 != 0)
   {
-    msatir = msatir + msgnot[notln];
-    myGLCD.print(msatir, CENTER, 8 * satirsayisi);
+    message = message + note[noteLn];
+    myGLCD.print(message, CENTER, 8 * mLineCount);
   }
-  while (ortab == 0) {
-    ortab = digitalRead(orta);
+  while (middlePressed == 0) {
+    middlePressed = digitalRead(middleButtonPin);
     delay(200);
-    menu = 0;
+    currentMenuIndex = 0;
   }
 }
 
-void metronom()
+void Metronome()
 {
   int tap = 60;
   myGLCD.clrScr();
   delay(100);
-  ortab = digitalRead(orta);
-  sagb = digitalRead(sag);
-  solb = digitalRead(sol);
-  while (ortab == 0)
+  middlePressed = digitalRead(middleButtonPin);
+  rightPressed = digitalRead(rightButtonPin);
+  leftPressed = digitalRead(leftButtonPin);
+  while (middlePressed == 0)
   {
     myGLCD.clrScr();
     myGLCD.print("Metronom", CENTER, 8);
     myGLCD.print(String(tap) , CENTER, 16);
-    ortab = digitalRead(orta);
-    sagb = digitalRead(sag);
-    solb = digitalRead(sol);
-    if (sagb == 1)
+    middlePressed = digitalRead(middleButtonPin);
+    rightPressed = digitalRead(rightButtonPin);
+    leftPressed = digitalRead(leftButtonPin);
+    if (rightPressed == 1)
     {
       tap += 1;
       delay(10);
     }
-    if (solb == 1)
+    if (leftPressed == 1)
     {
       tap -= 1;
       delay(10);
@@ -282,100 +288,101 @@ void metronom()
     delay(50);
   }
   delay(300);
-  ortab = 0;
-  while (ortab == 0)
+  middlePressed = 0;
+  while (middlePressed == 0)
   {
-    int bpmtap = 60000 / tap;
-    myGLCD.print(String(bpmtap) , CENTER, 24);
+    int bpmTap = 60000 / tap;
+    myGLCD.print(String(bpmTap) , CENTER, 24);
     digitalWrite(A3, HIGH);
     delay(10);
     digitalWrite(A3, LOW);
-    delay(bpmtap - 10);
-    ortab = digitalRead(orta);
-    menu = 0;
+    delay(bpmTap - 10);
+    middlePressed = digitalRead(middleButtonPin);
+    currentMenuIndex = 0;
   }
 }
-void uyku()
+void Sleep()
 {
+  myGLCD.enableSleep();
+  digitalWrite(5, LOW);
   delay(300);
-  ortab = 0;
-  while (ortab == 0)
+  middlePressed = 0;
+  while (middlePressed == 0)
   {
-    ortab = digitalRead(orta);
-    myGLCD.enableSleep();
-    digitalWrite(5, LOW);
-    menu = 0;
+    middlePressed = digitalRead(middleButtonPin);
+    currentMenuIndex = 0;
+    delay(1000);
   }
   digitalWrite(5, HIGH);
 }
-void isikcontrol(int pin, String isik)
+void LedControl(int pin, String ledName)
 {
   myGLCD.clrScr();
-  myGLCD.print(isik + " Isik", CENTER, 8);
+  myGLCD.print(ledName + " Isik", CENTER, 8);
   myGLCD.print("Yaniyor", CENTER, 16);
   digitalWrite(pin, HIGH);
   delay(200);
-  ortab = 0;
-  while (ortab == 0)
+  middlePressed = 0;
+  while (middlePressed == 0)
   {
-    ortab = digitalRead(orta);
-    sagb = digitalRead(sag);
-    solb = digitalRead(sol);
-    if (sagb == 1)
+    middlePressed = digitalRead(middleButtonPin);
+    rightPressed = digitalRead(rightButtonPin);
+    leftPressed = digitalRead(leftButtonPin);
+    if (rightPressed == 1)
     {
       myGLCD.clrScr();
-      myGLCD.print(isik + " Isik", CENTER, 8);
+      myGLCD.print(ledName + " isik", CENTER, 8);
       myGLCD.print("Yaniyor", CENTER, 16);
       digitalWrite(pin, HIGH);
     }
-    if (solb == 1)
+    if (leftPressed == 1)
     {
       myGLCD.clrScr();
-      myGLCD.print(isik + " Isik", CENTER, 8);
+      myGLCD.print(ledName + " isik", CENTER, 8);
       myGLCD.print("Yanmiyor", CENTER, 16);
       digitalWrite(pin, LOW);
     }
     delay(200);
   }
-  menu = 0;
+  currentMenuIndex = 0;
 }
-void kronometre()
+void Stopwatch ()
 {
-  int sayac = 0;
+  int second = 0;
   delay(200);
-  ortab = 0;
-  int dakika = 0;
-  while (ortab == 0)
+  middlePressed = 0;
+  int minute = 0;
+  while (middlePressed == 0)
   {
     myGLCD.clrScr();
-    ortab = digitalRead(orta);
-    if (sayac == 60)
+    middlePressed = digitalRead(middleButtonPin);
+    if (second == 60)
     {
-      dakika += 1;
-      sayac = 0;
-      myGLCD.print((String(dakika) + ":" + String(sayac)), CENTER, 16);
+      minute += 1;
+      second = 0;
+      myGLCD.print((String(minute) + ":" + String(second)), CENTER, 16);
     }
     else
     {
-      myGLCD.print((String(dakika) + ":" + String(sayac)), CENTER, 16);
+      myGLCD.print((String(minute) + ":" + String(second)), CENTER, 16);
     }
-    sayac += 1;
+    second += 1;
     delay(1000);
   }
-  menu = 0;
+  currentMenuIndex = 0;
 }
-void bildirim()
+void Alert()
 {
   for (int i = 0; i < 10; i++)
   {
     digitalWrite(5, HIGH);
-    if (bildirimonay)
+    if (getNotification)
     {
       digitalWrite(A3, HIGH);
     }
     delay(50);
     digitalWrite(5, LOW);
-    if (bildirimonay)
+    if (getNotification)
     {
       digitalWrite(A3, LOW);
     }
